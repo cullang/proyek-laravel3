@@ -20,7 +20,12 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('role')->default('user'); // Nilai bisa: 'admin' atau 'user'
+        });
     }
+    
 
     /**
      * Reverse the migrations.

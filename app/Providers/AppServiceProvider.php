@@ -14,11 +14,12 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
+    use Illuminate\Support\Facades\Gate;
+    use App\Models\User;
     public function boot(): void
     {
-        //
+        Gate::define('is-admin', function (User $user) {
+        return $user->role === 'admin';
+    });
     }
 }

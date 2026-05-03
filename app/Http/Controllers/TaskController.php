@@ -5,66 +5,42 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Services\TaskService;
 use Illuminate\Http\Request;
-use Exception;
+use Illuminate\Support\Facades\Gate;
 
 class TaskController extends Controller
 {
     protected $taskService;
 
-    // Inject Service ke Controller
     public function __construct(TaskService $taskService)
     {
         $this->taskService = $taskService;
+        // SEMUA fungsi di controller ini wajib LOGIN
+        $this->middleware('auth:sanctum'); 
     }
 
-    // 1. TAMPILKAN DATA
+    // Tampilkan Data (Bisa diakses Admin & User yang sudah login)
     public function index()
     {
         $tasks = $this->taskService->getAllTasks();
         return response()->json($tasks);
     }
 
-    // 2. TAMBAH DATA (dengan Validasi, Error Handling, & Service)
+    // Tambah Data
     public function store(Request $request)
     {
-        // Request Validation
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        try {
-            $task = $this->taskService->storeTask($validated);
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Data berhasil ditambahkan',
-                'data' => $task
-            ], 201);
-        } catch (Exception $e) {
-            // Error Handling
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        $validated = $request->validate(['title' => 'required|string']);
+        $task = $this->taskService->storeTask($validated);
+        return response()->json($task, 201);
     }
 
-    // 3. UBAH DATA
-    public function update(Request $request, Task $task)
-    {
-        $validated = $request->validate([
-            'title' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'is_completed' => 'sometimes|boolean'
-        ]);
-
-        $updatedTask = $this->taskService->updateTask($task, $validated);
-        return response()->json(['message' => 'Data berhasil diperbarui', 'data' => $updatedTask]);
-    }
-
-    // 4. HAPUS DATA
+    // HAPUS DATA (Hanya Admin)
     public function destroy(Task $task)
     {
+        // Proses Otorisasi
+        if (!Gate::allows('is-admin')) {
+            return response()->json(['message' => 'Hanya Admin yang boleh menghapus!'], 403);
+        }
+
         $this->taskService->deleteTask($task);
         return response()->json(['message' => 'Data berhasil dihapus']);
     }
